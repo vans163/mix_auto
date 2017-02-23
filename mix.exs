@@ -5,9 +5,9 @@ defmodule MixAuto.Mixfile do
     [app: :mix_auto,
      version: "0.0.1",
      elixir: "~> 1.0",
-     package: package,
-     description: description,
-     deps: deps]
+     package: package(),
+     description: description(),
+     deps: deps()]
   end
 
   def application do
