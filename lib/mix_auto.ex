@@ -18,10 +18,10 @@ defmodule MixAuto.Worker do
   require Logger
 
   def start_link do
-    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  def init(s) do
+  def init(_) do
     case :os.type() do
       {:unix, :linux} ->
         Logger.info "#{__MODULE__}: Started watcher on lib/"
@@ -31,7 +31,7 @@ defmodule MixAuto.Worker do
         Logger.error "#{__MODULE__}: Your OS is not supported, open a pull if you want support https://github.com/vans163/mix_auto/pulls"
     end
 
-    {:ok, s}
+    {:ok, %{timers: %{}}}
   end
 
   def handle_info(:recompile, s) do
@@ -40,21 +40,29 @@ defmodule MixAuto.Worker do
   end
 
   def handle_info({:recompile, filename}, s) do
-    case IEx.Helpers.c(filename, :in_memory) do
-      [] -> :ignore
-      [mod|_] -> IEx.Helpers.r(mod)
-    end
+    mods = IEx.Helpers.c(filename, :in_memory)
+    for mod<-mods, do: IEx.Helpers.l(mod)
+
     {:noreply, s}
   end
 
   def handle_info({:inotify, :changed, filename}, s) do
     Logger.info "#{__MODULE__}: File changed #{filename}"
-
     case :filename.extension(filename) do
-      ".ex" -> :erlang.send_after(300, self(), {:recompile, filename})
-      _ -> :ignore
-    end
+      ".ex" ->
+        case :maps.get(filename, s.timers, :undefined) do
+          :undefined ->
+            timer = :erlang.send_after(300, self(), {:recompile, filename})
+            {:noreply, %{s | timers: Map.put(s.timers, filename, timer)}}
 
-    {:noreply, s}
+          timer ->
+            :erlang.cancel_timer(timer)
+            timer = :erlang.send_after(300, self(), {:recompile, filename})
+            {:noreply, %{s | timers: Map.put(s.timers, filename, timer)}}
+
+        end
+      _ -> {:noreply, s}
+    end
   end
+
 end
