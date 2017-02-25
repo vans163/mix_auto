@@ -40,8 +40,10 @@ defmodule MixAuto.Worker do
   end
 
   def handle_info({:recompile, filename}, s) do
-    mods = IEx.Helpers.c(filename, :in_memory)
-    for mod<-mods, do: IEx.Helpers.l(mod)
+    case IEx.Helpers.c(filename, :in_memory) do
+      [] -> :ignore
+      [mod|_] -> IEx.Helpers.r(mod)
+    end
 
     {:noreply, s}
   end
