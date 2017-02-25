@@ -31,8 +31,8 @@ defmodule MixAuto.Worker do
         Logger.error "#{__MODULE__}: Your OS is not supported, open a pull if you want support https://github.com/vans163/mix_auto/pulls"
     end
 
-    timer = :erlang.send_after(948787571000, self(), :recompile)
-    {:ok, Map.put(s, :timer, timer)}
+    #timer = :erlang.send_after(948787571000, self(), :recompile)
+    {:ok, s}
   end
 
   def handle_info(:recompile, s) do
@@ -40,12 +40,21 @@ defmodule MixAuto.Worker do
     {:noreply, s}
   end
 
-  def handle_info({:inotify, :changed, filename}, s=%{timer: timer}) do
+  def handle_info({:recompile, filename}, s) do
+    IEx.Helpers.r(filename)
+    {:noreply, s}
+  end
+
+  def handle_info({:inotify, :changed, filename}, s) do
     Logger.info "#{__MODULE__}: File changed #{filename}"
 
-    :erlang.cancel_timer(timer)
-    timer = :erlang.send_after(300, self(), :recompile)
+    #:erlang.cancel_timer(timer)
+    #timer = :erlang.send_after(300, self(), :recompile)
+    case :filename.extension(filename) do
+      ".ex" -> :erlang.send_after(300, self(), {:recompile, filename})
+      _ -> :ignore
+    end
 
-    {:noreply, Map.put(s, :timer, timer)}
+    {:noreply, s}
   end
 end
