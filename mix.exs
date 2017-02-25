@@ -29,7 +29,7 @@ defmodule MixAuto.Mixfile do
 
   defp description do
     """
-    Calls recompile anytime something inside lib/ changes.
+    Calls r/1 anytime a ".ex" file inside lib/ changes.
     """
   end
 end
