@@ -4,7 +4,7 @@ defmodule MixAuto.Mixfile do
   def project do
     [app: :mix_auto,
      version: "0.0.1",
-     elixir: "~> 1.0",
+     elixir: "~> 1.4",
      package: package(),
      description: description(),
      deps: deps()]
